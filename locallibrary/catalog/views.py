@@ -34,3 +34,33 @@ class BookListView(generic.ListView):
 
 class BookDetailView(generic.DetailView):
     model = Book
+
+class AuthorListView(generic.ListView):
+    model = Author
+    paginate_by = 2
+
+class AuthorDetailView(generic.DetailView):
+    model = Author
+
+    def get_context_data(self, **kwargs):
+        # Call the base implementation first to get the context
+        context = super(AuthorDetailView, self).get_context_data(**kwargs)
+        # Create any data and add it to the context
+        context['his_books'] = Book.objects.filter(author=self.object)
+        print(f"list of books: {context['his_books']}")
+        return context
+
+from django.contrib.auth.mixins import LoginRequiredMixin
+
+class LoanedBooksByUserListView(LoginRequiredMixin,generic.ListView):
+    """Generic class-based view listing books on loan to current user."""
+    model = BookInstance
+    template_name = 'catalog/bookinstance_list_borrowed_user.html'
+    paginate_by = 10
+
+    def get_queryset(self):
+        return (
+            BookInstance.objects.filter(borrower=self.request.user)
+            .filter(status__exact='o')
+            .order_by('due_back')
+        )
